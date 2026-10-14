@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CampusAR Scanner | St. Aloysius</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+:root{color-scheme:dark;--navy:#07172b;--teal:#22d3c5;--muted:#a8bdcc}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--navy);font-family:system-ui,sans-serif}a-scene{position:fixed;inset:0}.hud{position:fixed;z-index:5;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:calc(16px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom))}.top,.bottom{pointer-events:auto;background:rgba(7,23,43,.88);border:1px solid #22d3c577;border-radius:16px;padding:12px 14px;backdrop-filter:blur(12px)}.brand{font-weight:800;font-size:18px}.brand span{color:var(--teal)}.sub{color:var(--muted);font-size:12px;margin-top:3px}#status{margin-top:10px;color:#dceaf1;font-size:14px}.bottom{text-align:center}.bottom p{margin:0 0 12px;font-size:13px;color:#dceaf1}button{background:var(--teal);color:#05202c;border:0;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:750;cursor:pointer}button.secondary{color:#eaf7f8;background:#17344b;border:1px solid #426176;margin-left:8px}#startOverlay{position:fixed;z-index:10;inset:0;background:var(--navy);display:grid;place-items:center;padding:24px}.panel{width:min(420px,100%);text-align:center;border:1px solid #22d3c577;border-radius:22px;padding:26px 22px;background:linear-gradient(150deg,#102c43,#07172b 70%)}.mark{width:64px;height:64px;margin:0 auto 14px;border:2px solid var(--teal);border-radius:18px;display:grid;place-items:center;color:var(--teal);font-size:30px}h1{font-size:25px;margin:0 0 8px}.panel p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 20px}#error{color:#ffc7c7;font-size:13px;margin-top:12px}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="startOverlay"><div class="panel"><div class="mark">⌁</div><h1>Campus<span style="color:#22d3c5">AR</span> Scanner</h1><p>St. Aloysius (Deemed to be University)<br>School of Engineering<br><br>Allow camera access, then point your phone at the printed CampusAR image target.</p><button id="startBtn">Start AR scanner</button><div id="error" role="status"></div></div></div>
+<div class="hud"><div class="top"><div class="brand">Campus<span>AR</span> · St. Aloysius</div><div class="sub">SCHOOL OF ENGINEERING</div><div id="status" role="status">Ready to start.</div></div><div class="bottom"><p>Move slowly until the printed image is recognized. Keep the card well lit.</p><button id="recenterBtn">Reset view</button><button id="exitBtn" class="secondary">Exit scanner</button></div></div>
+<a-scene id="arScene" mindar-image="imageTargetSrc: ./assets/campus-targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
+<a-assets><a-asset-item id="collegeModel" src="./assets/college.glb"></a-asset-item></a-assets><a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+<a-entity id="targetAnchor" mindar-image-target="targetIndex: 0"><a-gltf-model id="college3d" src="#collegeModel" position="0 0 0.05" rotation="0 0 0" scale="0.1 0.1 0.1" animation="property: rotation; to: 0 360 0; dur: 18000; easing: linear; loop: true"></a-gltf-model></a-entity>
+</a-scene>
+<script>
+const sceneEl=document.querySelector('#arScene'),startOverlay=document.querySelector('#startOverlay'),startBtn=document.querySelector('#startBtn'),statusEl=document.querySelector('#status'),errorEl=document.querySelector('#error'),modelEl=document.querySelector('#college3d'),anchorEl=document.querySelector('#targetAnchor');
+function setStatus(m){statusEl.textContent=m}
+anchorEl.addEventListener('targetFound',()=>setStatus('Card recognized — your campus model is visible.'));
+anchorEl.addEventListener('targetLost',()=>setStatus('Target lost. Point the camera at the card again.'));
+startBtn.addEventListener('click',async()=>{errorEl.textContent='';startBtn.disabled=true;startBtn.textContent='Starting camera…';try{await sceneEl.systems['mindar-image-system'].start();startOverlay.classList.add('hidden');setStatus('Camera started. Scan the printed image target.')}catch(err){console.error(err);errorEl.textContent='Could not start camera. Use HTTPS, allow camera permission, and try a supported mobile browser.';startBtn.disabled=false;startBtn.textContent='Try again'}});
+document.querySelector('#recenterBtn').addEventListener('click',()=>{modelEl.setAttribute('rotation','0 0 0');modelEl.setAttribute('scale','0.1 0.1 0.1');setStatus('View reset. Scan the card if the model is not visible.')});
+document.querySelector('#exitBtn').addEventListener('click',async()=>{try{await sceneEl.systems['mindar-image-system'].stop()}catch(e){}startOverlay.classList.remove('hidden');startBtn.disabled=false;startBtn.textContent='Start AR scanner';setStatus('Scanner stopped.')});
+modelEl.addEventListener('model-error',()=>setStatus('Could not load college.glb. Check the file path and filename.'));
+</script></body></html>
